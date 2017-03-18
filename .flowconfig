@@ -1,0 +1,4 @@
+[libs]
+decl/
+[ignore]
+.*/node_modules/jsverify/.*
