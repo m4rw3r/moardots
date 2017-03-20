@@ -13,20 +13,24 @@ export type Meta<P, S> = {
 export type FullVNode = {
   nodeName:   string,
   attributes: Object,
-  children:   Array<FullVNode>,
+  children:   Array<FullVNode|string>,
   meta:       Array<Meta<any, any>>
 };
 export type Component<P, S> = (p: P, s?: S) => [VNode<*, *>, ?S];
 
+const EMPTY_ATTRIBUTES = {};
+const EMPTY_CHILDREN   = [];
+
+// TODO: Handle numbers and nested arrays in children
 export function h<P, S>(nodeName: string|Component<P, S>, attributes: P, ...children: Array<VNode<*, *>>): VNode<P, S> {
   return {
     nodeName:   nodeName,
-    attributes: attributes || {},
-    children:   children   || []
+    attributes: attributes || EMPTY_ATTRIBUTES,
+    children:   children   || EMPTY_CHILDREN
   };
 }
 
-function mkAttrs(attributes, children) {
+const mkAttrs = (attributes, children) => {
   let newObj = {};
 
   for(let k in attributes) {
@@ -40,37 +44,61 @@ function mkAttrs(attributes, children) {
   return newObj;
 }
 
-// TODO: Make it possible to slot in an implementation which would actually render these FullVNodes
-export function render<P, S>(node: VNode<P, S>, orig?: FullVNode): FullVNode {
-  if(typeof node === "string") {
-    return node;
+export type MkNode<N> = (nodeName: string, attributes: Object, meta: Array<Meta<any, any>>, children: Array<N|string>) => N;
+/**
+ * Function obtaining a metadata stack from a node of type N.
+ */
+export type GetStack<N> = (node: N) => Array<Meta<*, *>>;
+export type MkString<N> = (str: string) => N;
+
+/**
+ * Constructor for the actual render.
+ */
+export const mkRender = <P, S, N>(mkString: MkString<N>, getStack: GetStack<N>, mkNode: MkNode<N>): ((node: VNode<P, S>, orig?: N) => N) =>  {
+  return function render(node: VNode<P, S>, orig?: N): N {
+    if(typeof node === "string") {
+      return mkString(node);
+    }
+
+    const oldStack = orig ? getStack(node) : [];
+    let   newStack = [];
+
+    while(typeof node.nodeName === "function") {
+      const { state, source, props }           = oldStack.pop() || {};
+      const { nodeName, attributes, children } = node;
+
+      // TODO: Diff
+
+      const res = nodeName(mkAttrs(attributes, children), source === nodeName ? state : undefined);
+
+      node = res[0];
+
+      newStack.push({
+        source: nodeName,
+        props:  attributes,
+        state:  res[1]
+      });
+    }
+
+    // TODO: How to map the keys?
+    const newChildren = node.children.map((n, i) => render(n, orig && orig.children[i] ? orig.children[i] : undefined))
+
+    return mkNode(node.nodeName, node.attributes, newStack, newChildren);
   }
-
-  const oldStack = orig ? orig.meta : [];
-  let   newStack = [];
-
-  while(typeof node.nodeName === "function") {
-    const { state, source, props }           = oldStack.pop() || {};
-    const { nodeName, attributes, children } = node;
-
-    // TODO: Diff
-
-    const res = nodeName(mkAttrs(attributes, children), source === nodeName ? state : undefined);
-
-    node = res[0];
-
-    newStack.push({
-      source: nodeName,
-      props:  attributes,
-      state:  res[1]
-    });
-  }
-
-  // TODO: How to map the keys?
-  return {
-    nodeName:   node.nodeName,
-    attributes: node.attributes,
-    meta:       newStack,
-    children:   node.children.map((n, i) => render(n, orig && orig.children[i] ? orig.children[i] : undefined))
-  };
 }
+
+const getStructStack = (node: FullVNode|string): Array<Meta<*, *>> =>
+  typeof node !== "object" ? [] : node.stack;
+
+const mkStruct = (nodeName, attributes, meta, children): FullVNode =>
+  ({
+    nodeName:   nodeName,
+    attributes: attributes,
+    meta:       meta,
+    children:   children
+  });
+
+export const renderStruct: (n: VNode<*, *>, n: FullNode|string) => FullNode|string
+  = mkRender(x => x, getStructStack, mkStruct);
+
+// export const renderDom = mkRender();
