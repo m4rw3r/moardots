@@ -2,6 +2,8 @@
 
 import type { Component, Meta, VNode } from "./vdom";
 
+import { KEY_ATTR } from "./constants";
+
 const mkAttrs = (attributes, children) => {
   let newObj = {};
 
@@ -25,20 +27,31 @@ export type GetStack<N>  = (node: N) => Array<Meta<*, *>>;
 
 export type MkString<N>  = (str: string, meta: Array<Meta<*, *>>, orig?: N) => N;
 
-export type AdaptNode<N> = (type: string, attrs: Object, meta: Array<Meta<*, *>>, orig?: N) => N;
+export type AdaptNode<N, I> = (type: string, attrs: Object, meta: Array<Meta<*, *>>, orig?: N) => I;
+
+export type GetChildMap<N, I> = (node: N, intermediate: I) => {[key: string|number]: N};
+
+export type AddChild<N, I> = (parent: I, newChild: N, prev?: N) => I;
+
+export type RemoveChild<N, I> = (parent: I, oldChild: N) => I;
+
+export type FinalizeNode<N, I> = (transient: I) => N;
 
 type ResolvedNode = {
   _type:     string,
   _meta:     Array<Meta<any, any>>,
   _key:      string | null,
+  _text:     null,
   _attrs:    Object,
   _children: Array<VNode<any, any>>
 };
 
 type ResolvedString = {
-  _type: false,
-  _meta: Array<Meta<any, any>>,
-  _text: string
+  _type:     false,
+  _meta:     Array<Meta<any, any>>,
+  _text:     string,
+  _attrs:    null,
+  _children: null
 };
 
 export type ResolvedVNode = ResolvedString | ResolvedNode;
@@ -53,7 +66,8 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
       return {
         _type:     nodeName,
         _meta:     newStack,
-        _key:      attributes && attributes["key"] ? attributes.key : null,
+        _key:      attributes && attributes[KEY_ATTR] ? attributes[KEY_ATTR] : null,
+        _text:     null,
         _attrs:    attributes,
         _children: children,
       };
@@ -75,19 +89,26 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
   }
 
   return {
-    _type: false,
-    _meta: newStack,
-    _text: node,
+    _type:     false,
+    _meta:     newStack,
+    _key:      null,
+    _text:     node,
+    _attrs:    null,
+    _children: null,
   };
 }
 
 /**
  * Constructor for the actual render.
  */
-export const mkRender = <P: Object, S, N>(
-  mkString: MkString<N>,
-  getStack: GetStack<N>,
-  adaptNode: AdaptNode<N>
+export const mkRender = <P: Object, S, N, I>(
+  mkString:    MkString<N>,
+  getStack:    GetStack<N>,
+  adaptNode:   AdaptNode<N, I>,
+  getChildMap: GetChildMap<N, I>,
+  addChild:    AddChild<N, I>,
+  removeChild: RemoveChild<N, I>,
+  finalizeNode: FinalizeNode<N, I>
 ): ((node: VNode<P, S>, orig?: N) => N) =>
   function render(node: VNode<P, S>, orig?: N): N {
     const r = resolveVNode(node, orig ? getStack(orig) : []);
@@ -97,10 +118,31 @@ export const mkRender = <P: Object, S, N>(
       return mkString((r: any)._text, r._meta, orig);
     }
 
-    const newNode = adaptNode(r._type, r._attrs, r._meta, orig);
+    const children = r._children;
+    let   newNode  = adaptNode(r._type, r._attrs, r._meta, orig);
+    const keyed    = orig ? getChildMap(orig, newNode) : {};
 
-    // TODO: How to map the keys?
-    const newChildren = r._children.map((n, i) => render(n, orig && orig.children[i] ? orig.children[i] : undefined));
+    // We do not want to use a `for(let child of iter)` since the code
+    // generated is complex to account for every case
 
-    return newNode;
+    for(let i = 0; i < children.length; i++) {
+      const vchild = children[i];
+      const key    = typeof vchild === "string" ? i : vchild.attributes[KEY_ATTR] || i;
+      const child  = keyed[key];
+
+      const newChild = render(vchild, child)
+
+      // TODO: Go through how this works properly
+      newNode = addChild(newNode, newChild, child);
+
+      if(newChild === child) {
+        delete keyed[key];
+      }
+    }
+
+    for(let k in keyed) {
+      newNode = removeChild(newNode, keyed[k]);
+    }
+
+    return finalizeNode(newNode);
   };

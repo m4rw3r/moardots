@@ -2,9 +2,15 @@
 
 import type { VNode } from "./vdom";
 
+import { META_KEY,
+         KEY }      from "./constants";
 import { mkRender } from "./render";
 
-const removeNode = node => {};
+const removeNode = node => {
+  const p = node.parentNode;
+
+  p && p.removeChild(node);
+};
 
 const mkTextNode = (text, meta, orig) => {
   if(orig && orig instanceof Text) {
@@ -19,24 +25,58 @@ const mkTextNode = (text, meta, orig) => {
   }
 
   // TODO: Assign meta
-  (orig: any).meta = meta;
+  (orig: any)[META_KEY] = meta;
 
   return orig;
 };
 
-const getStack = (node) => {
-  return (node: any).meta || [];
-};
+const getStack = node =>
+  (node: any)[META_KEY] || [];
 
 const mkNode = (type, attrs, meta, orig) => {
-  const node = document.createElement(type);
+  const node = orig && orig.nodeName === type ? orig : document.createElement(type);
 
-  //children.forEach(c => node.appendChild(c));
+  if(orig && orig !== node) {
+    while(orig.firstChild) {
+      node.appendChild(orig.firstChild);
+    }
 
-  (node: any).meta = meta;
+    removeNode(orig);
+  }
+
+  (node: any)[META_KEY] = meta;
 
   return node;
 };
 
+const getKeyedChildren = (_old, node) => {
+  // Old can be an old node, all nodes have been moved to the new intermediate node
+
+  const nodes = node.childNodes;
+  let   map   = {};
+
+  for(let i = 0, d = nodes.length; i < d; i++) {
+    const n = (nodes[i]: any);
+
+    if(n[KEY]) {
+      map[n[KEY]] = nodes[i];
+    }
+    else {
+      map[i] = nodes[i];
+    }
+  }
+
+  return map;
+};
+
+const addChild = (parent, newChild, prev?) => {
+  // FIXME: Code
+  throw new Error("dom: addChild: Incomplete");
+
+  // parent.children.push(newChild);
+
+  //return parent;
+};
+
 export const renderDom: (n: VNode<*, *>, n: Node) => Node
-  = mkRender(mkTextNode, getStack, mkNode);
+  = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, (parent, node) => {removeNode(node); return parent; }, x => x);
