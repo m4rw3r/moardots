@@ -12,7 +12,7 @@ clean:
 
 .PHONY: test
 test:
-	$(BIN)/tap -Rspec tests/*.test.js
+	$(BIN)/tap -Rspec --node-arg=--require --node-arg=babel-register tests/*.test.js
 
 .PHONY: flow
 flow:

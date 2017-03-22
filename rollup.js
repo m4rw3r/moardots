@@ -19,7 +19,7 @@ const shared = {
     babel({
       babelrc: false,
       presets: ["es2015-rollup"],
-      plugins: ["syntax-flow", "transform-flow-strip-types"]
+      plugins: ["syntax-flow", "syntax-jsx", "transform-flow-strip-types"]
     }),
   ]
 };
