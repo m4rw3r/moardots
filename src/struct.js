@@ -2,12 +2,11 @@
 
 import type { Meta, VNode } from "./vdom";
 
+import { KEY_ATTR, ID } from "./constants";
 import { mkRender }  from "./render";
 
-import { KEY_ATTR, ID } from "./constants";
-
 export type StructNode = {
-  nodeName:   string,
+  nodeName:   string|null,
   attributes: Object,
   children:   Array<StructNode|string>,
   meta:       Array<Meta<any, any>>

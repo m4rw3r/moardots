@@ -33,6 +33,12 @@ const getStack = node =>
   (node: any)[META_KEY] || [];
 
 const mkNode = (type, attrs, meta, orig) => {
+  if( ! type) {
+    // Nested node
+    // TODO: Implement
+    throw new Error("Unimplemented");
+  }
+
   const node = orig && orig.nodeName === type ? orig : document.createElement(type);
 
   if(orig && orig !== node) {

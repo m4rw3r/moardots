@@ -55,8 +55,11 @@ const mkAttrs = attrs => {
 /**
  * Converts an intermediate node-representation to a string.
  */
-const finalizeNode = node =>
-  "<" + node._type + mkAttrs(node._attrs) + ">" + node._children.join("") + "</" + node._type + ">";
+const finalizeNode = node => {
+  const t = node._type;
+
+  return t ? "<" + t + mkAttrs(node._attrs) + ">" + node._children.join("") + "</" + t + ">" : node._children.join("");
+};
 
 /**
  * Renders a VNode to a string.

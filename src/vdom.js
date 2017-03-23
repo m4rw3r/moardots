@@ -19,6 +19,7 @@ export function h<P: Object, S>(nodeName: string|Component<P, S>, attributes: P,
     return nodeName ? "" + nodeName : "";
   }
 
+  // TODO: Flatten children-arrays (this is a performance-optimization, avoiding unnecesary fragment-creation)
   return {
     nodeName:   nodeName,
     attributes: attributes || EMPTY_ATTRIBUTES,

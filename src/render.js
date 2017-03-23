@@ -2,7 +2,7 @@
 
 import type { Component, Meta, VNode } from "./vdom";
 
-import { KEY_ATTR, EMPTY_CHILDREN } from "./constants";
+import { KEY_ATTR, EMPTY_CHILDREN, EMPTY_ATTRIBUTES } from "./constants";
 
 const mkAttrs = (attributes, children) => {
   let newObj = {};
@@ -27,7 +27,7 @@ export type GetStack<N>  = (node: N) => Array<Meta<*, *>>;
 
 export type MkString<N>  = (str: string, meta: Array<Meta<*, *>>, orig?: N) => N;
 
-export type AdaptNode<N, I> = (type: string, attrs: Object, meta: Array<Meta<*, *>>, orig?: N) => I;
+export type AdaptNode<N, I> = (type: string|null, attrs: Object, meta: Array<Meta<*, *>>, orig?: N) => I;
 
 export type GetChildMap<N, I> = (node: N, intermediate: I) => {[key: string|number]: N};
 
@@ -45,25 +45,43 @@ type ResolvedNode = {
   _children: Array<VNode<any, any>>
 };
 
+type ResolvedArray = {
+  _type:     null,
+  _meta:     Array<Meta<any, any>>,
+  _text:     null,
+  _attrs:    Object,
+  _children: Array<VNode<any, any>>
+};
+
 type ResolvedString = {
-  _type:     false,
+  _type:     true,
   _meta:     Array<Meta<any, any>>,
   _text:     string,
   _attrs:    null,
   _children: null
 };
 
-export type ResolvedVNode = ResolvedString | ResolvedNode;
+export type ResolvedVNode = ResolvedString | ResolvedArray | ResolvedNode;
 
 const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, any>>): ResolvedVNode => {
   let newStack = [];
 
   while(typeof node !== "string" && node) {
+    if(Array.isArray(node)) {
+      return {
+        _type:     null,
+        _meta:     newStack,
+        _text:     null,
+        _attrs:    EMPTY_ATTRIBUTES,
+        _children: node
+      };
+    }
+
     const { nodeName, attributes, children } = node;
 
     if(typeof nodeName !== "function") {
       return {
-        _type:     nodeName,
+        _type:     (nodeName: string),
         _meta:     newStack,
         _text:     null,
         _attrs:    attributes,
@@ -87,7 +105,7 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
   }
 
   return {
-    _type:     false,
+    _type:     true,
     _meta:     newStack,
     _text:     node || "",
     _attrs:    null,
@@ -110,7 +128,7 @@ export const mkRender = <P: Object, S, N, I>(
   function render(node: VNode<P, S>, orig?: N): N {
     const r = resolveVNode(node, orig ? getStack(orig) : []);
 
-    if(r._type === false) {
+    if(r._type === true) {
       // Why does Flow fail to detect _text here?
       return mkString((r: any)._text, r._meta, orig);
     }
@@ -124,7 +142,8 @@ export const mkRender = <P: Object, S, N, I>(
 
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
-      const key    = typeof vchild !== "string" && vchild && vchild.attributes[KEY_ATTR] || i;
+      // TODO: This feels a bit long, any way to shorten it?
+      const key    = typeof vchild !== "string" && vchild && vchild.attributes && vchild.attributes[KEY_ATTR] || i;
       const child  = keyed[key];
 
       const newChild = render(vchild, child)

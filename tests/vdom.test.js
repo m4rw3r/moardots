@@ -18,8 +18,9 @@ describe("invalid", () => {
   it("undefined", () => h(undefined).should.equal(""));
 
   context("children", () => {
-    it("_null",      () => h("p", null, null).should.deepEqual({ nodeName: "p", attributes: {}, children: [null] }));
-    it("_undefined", () => h("p", null, undefined).should.deepEqual({ nodeName: "p", attributes: {}, children: [undefined] }));
+    it("NaN" ,      () => h("p", null, NaN).should.deepEqual({ nodeName: "p", attributes: {}, children: [NaN] }));
+    it("null",      () => h("p", null, null).should.deepEqual({ nodeName: "p", attributes: {}, children: [null] }));
+    it("undefined", () => h("p", null, undefined).should.deepEqual({ nodeName: "p", attributes: {}, children: [undefined] }));
   });
 });
 
