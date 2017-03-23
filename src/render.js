@@ -2,7 +2,7 @@
 
 import type { Component, Meta, VNode } from "./vdom";
 
-import { KEY_ATTR } from "./constants";
+import { KEY_ATTR, EMPTY_CHILDREN } from "./constants";
 
 const mkAttrs = (attributes, children) => {
   let newObj = {};
@@ -40,7 +40,6 @@ export type FinalizeNode<N, I> = (transient: I) => N;
 type ResolvedNode = {
   _type:     string,
   _meta:     Array<Meta<any, any>>,
-  _key:      string | null,
   _text:     null,
   _attrs:    Object,
   _children: Array<VNode<any, any>>
@@ -59,14 +58,13 @@ export type ResolvedVNode = ResolvedString | ResolvedNode;
 const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, any>>): ResolvedVNode => {
   let newStack = [];
 
-  while(typeof node !== "string") {
+  while(typeof node !== "string" && node) {
     const { nodeName, attributes, children } = node;
 
     if(typeof nodeName !== "function") {
       return {
         _type:     nodeName,
         _meta:     newStack,
-        _key:      attributes && attributes[KEY_ATTR] ? attributes[KEY_ATTR] : null,
         _text:     null,
         _attrs:    attributes,
         _children: children,
@@ -91,8 +89,7 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
   return {
     _type:     false,
     _meta:     newStack,
-    _key:      null,
-    _text:     node,
+    _text:     node || "",
     _attrs:    null,
     _children: null,
   };
@@ -127,10 +124,12 @@ export const mkRender = <P: Object, S, N, I>(
 
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
-      const key    = typeof vchild === "string" ? i : vchild.attributes[KEY_ATTR] || i;
+      const key    = typeof vchild !== "string" && vchild && vchild.attributes[KEY_ATTR] || i;
       const child  = keyed[key];
 
       const newChild = render(vchild, child)
+
+      // TODO: Support nested arrays
 
       // TODO: Go through how this works properly
       newNode = addChild(newNode, newChild, child);

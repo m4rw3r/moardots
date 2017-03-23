@@ -24,7 +24,6 @@ const mkTextNode = (text, meta, orig) => {
     orig = document.createTextNode(text);
   }
 
-  // TODO: Assign meta
   (orig: any)[META_KEY] = meta;
 
   return orig;
