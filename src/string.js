@@ -38,15 +38,44 @@ const mkAttrs = attrs => {
 
   // TODO: Sort keys to make it testable
   for(let key in attrs) {
-    // TODO: Exclude attributes, eg. on*
-    if(key[0] == "o" && key[1] == "n" || key === "children") {
+    // Exclude attributes, eg. on*
+    if(key[0] == "o" && key[1] == "n" ||
+       key === "children" ||
+       key === "key" ||
+       key === "ref") {
       continue;
     }
 
-    // TODO: Boolean attributes
     // TODO: Style and Class attributes
     // TODO: dangerouslySetInnerHTML
-    str += " " + escapeStr(key) + "=\"" + escapeStr(attrs[key]) + "\"";
+
+    const value = attrs[key]
+
+    if(key === "className") {
+      key = "class";
+    }
+
+    // If the value is a function or falsy we skip the attribute
+    // (0 is not considered falsy for HTML-attributes, nor is empty string)
+    if(typeof value === "function" || ! (value || value === 0 || value === "")) {
+      continue;
+    }
+
+    if(key === "class" && typeof value === "object") {
+      //value = hashToClassName(value);
+    }
+
+    // Boolean attributes
+    if(value === true || value === "") {
+      str += " " + key;
+
+      continue;
+
+      // XML-mode
+      // value = key;
+    }
+
+    str += ` ${key}="${escapeStr(value)}"`;
   }
 
   return str;
@@ -58,6 +87,7 @@ const mkAttrs = attrs => {
 const finalizeNode = node => {
   const t = node._type;
 
+  // TODO: void-elements
   return t ? "<" + t + mkAttrs(node._attrs) + ">" + node._children.join("") + "</" + t + ">" : node._children.join("");
 };
 

@@ -2,7 +2,7 @@
 
 import { EMPTY_ATTRIBUTES, EMPTY_CHILDREN } from "./constants";
 
-export type VNode<P: Object, S> = string | {
+export type VNode<P: Object, S> = string | Array<VNode<*, *>> | {
   nodeName:   string|Component<P, S>,
   attributes: P,
   children:   Array<VNode<*, *>>

@@ -1,6 +1,7 @@
 /* @flow */
 
-export type { Component, Meta, VNode } from "./vdom";
+export type { Component, VNode, Meta } from "./vdom";
+export type { StructNode }             from "./struct";
 
 export { h }            from "./vdom";
 export { renderDom }    from "./dom";

@@ -4,20 +4,6 @@ import type { Component, Meta, VNode } from "./vdom";
 
 import { KEY_ATTR, EMPTY_CHILDREN, EMPTY_ATTRIBUTES } from "./constants";
 
-const mkAttrs = (attributes, children) => {
-  let newObj = {};
-
-  for(let k in attributes) {
-    if(attributes.hasOwnProperty(k)) {
-      newObj[k] = attributes[k];
-    }
-  }
-
-  newObj.children = children;
-
-  return newObj;
-}
-
 export type MkNode<N> = (nodeName: string, attributes: Object, children: Array<N|string>, meta: Array<Meta<*, *>>) => N;
 
 /**
@@ -35,7 +21,21 @@ export type AddChild<N, I> = (parent: I, newChild: N, prev?: N) => I;
 
 export type RemoveChild<N, I> = (parent: I, oldChild: N) => I;
 
-export type FinalizeNode<N, I> = (transient: I) => N;
+export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
+
+const mkAttrs = (attributes, children) => {
+  let newObj = {};
+
+  for(let k in attributes) {
+    if(attributes.hasOwnProperty(k)) {
+      newObj[k] = attributes[k];
+    }
+  }
+
+  newObj.children = children;
+
+  return newObj;
+}
 
 type ResolvedNode = {
   _type:     string,
@@ -130,7 +130,7 @@ export const mkRender = <P: Object, S, N, I>(
 
     if(r._type === true) {
       // Why does Flow fail to detect _text here?
-      return mkString((r: any)._text, r._meta, orig);
+      return mkString(r._text, r._meta, orig);
     }
 
     const children = r._children;
@@ -143,7 +143,8 @@ export const mkRender = <P: Object, S, N, I>(
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
       // TODO: This feels a bit long, any way to shorten it?
-      const key    = typeof vchild !== "string" && vchild && vchild.attributes && vchild.attributes[KEY_ATTR] || i;
+      const key    = (typeof vchild !== "string" && vchild && vchild.attributes && (vchild: any).attributes[KEY_ATTR] || i: any);
+      (key: string|number);
       const child  = keyed[key];
 
       const newChild = render(vchild, child)
@@ -162,5 +163,5 @@ export const mkRender = <P: Object, S, N, I>(
       newNode = removeChild(newNode, keyed[k]);
     }
 
-    return finalizeNode(newNode);
+    return finalizeNode(newNode, orig);
   };

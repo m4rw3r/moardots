@@ -3,7 +3,7 @@
 import type { Meta, VNode } from "./vdom";
 
 import { KEY_ATTR, ID } from "./constants";
-import { mkRender }  from "./render";
+import { mkRender }     from "./render";
 
 export type StructNode = {
   nodeName:   string|null,

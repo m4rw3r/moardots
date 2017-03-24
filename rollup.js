@@ -10,7 +10,7 @@ const minify     = require("uglifyjs").minify;
 const targets = {
   "":       { format: "cjs", sourceMap: true },
   "es2015": { format: "es",  sourceMap: true },
-  "umd":    { format: "umd", sourceMap: true, moduleName: "fjs" }
+  "umd":    { format: "umd", sourceMap: true, moduleName: "moardots" }
 };
 
 const shared = {
@@ -60,7 +60,7 @@ const prod = Object.assign({}, shared, {
       },
       mangle:   {
         toplevel: true,
-        except:   ["Map", "List"],
+        except:   [],
       },
       mangleProperties: {
         regex: /^_/
