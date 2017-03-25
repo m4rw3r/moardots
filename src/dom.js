@@ -3,8 +3,9 @@
 import type { VNode } from "./vdom";
 
 import { META_KEY,
-         KEY }      from "./constants";
-import { mkRender } from "./render";
+         KEY,
+         ATTRS_KEY }  from "./constants";
+import { mkRender }   from "./render";
 
 const replaceNode = (node, orig) => {
   const p = orig.parentNode;
@@ -59,22 +60,47 @@ const setAttr = (node, key, value) => {
     key = "className";
   }
 
-  if(key === "className" && typeof value === "object") {
+  if(key === "className" && typeof value === "object" && value) {
     value = hashToClassName(value);
   }
 
-  console.log(key, value);
-
-  // TODO: Why is value not set on input?
+  // TODO: Event-listeners
   if(key in node) {
-    // try {
+    try {
       (node: any)[key] = (value == null ? "" : value);
-    //} catch(e) { }
+    } catch(e) { }
+
     (value == null || value === false) && (node: any).removeAttribute(key);
   }
   else if(value != null && value !== false) {
     (node: any).setAttribute(key, value);
   }
+};
+
+const setAttrs = (node, attrs) => {
+  const prev = (node: any)[ATTRS_KEY] || {};
+  let   copy = {};
+
+  for(let k in prev) {
+    if(!(k in attrs)) {
+      setAttr(node, k);
+    }
+  }
+
+  for(let k in attrs) {
+    if(k === "key" || k === "children" || k === "innerHTML") {
+      continue;
+    }
+
+    // Duplicate the attributes to be able to diff later
+    copy[k] = attrs[k];
+
+    if(attrs[k] !== (k === "value" || k === "checked" ? (node: any)[k] : prev[k])) {
+      setAttr(node, k, attrs[k]);
+    }
+  }
+
+  (node: any)[ATTRS_KEY] = copy;
 };
 
 const mkNode = (type, attrs, meta, orig) => {
@@ -97,15 +123,7 @@ const mkNode = (type, attrs, meta, orig) => {
     //replaceNode(node, orig);
   }
 
-  for(let k in attrs) {
-    if(k === "key" || k === "children") {
-      continue;
-    }
-
-    // TODO: Diff existing
-
-    setAttr(node, k, attrs[k]);
-  }
+  setAttrs(node, attrs);
 
   (node: any)[META_KEY] = meta;
 
@@ -134,15 +152,11 @@ const getKeyedChildren = (_old, node) => {
 
 const addChild = (parent, newChild, prev?) => {
   // FIXME: Code
-  //throw new Error("dom: addChild: Incomplete");
-
   if( ! prev) {
+    // Nothing to swap with later, insert it here now
     parent.appendChild(newChild);
   }
-  // We replace in parent (right?)
-  /*else {
-    parent.replaceChild(newChild, prev);
-  }*/
+  // We replace the node when it is finished instead of here
 
   return parent;
 };
@@ -154,7 +168,15 @@ const finalizeNode = (newNode: any, prevNode: any) => {
   }
 
   return newNode;
-}
+};
+
+const removeNodeIfInParent = (parent, node) => {
+  const p = node.parentNode;
+
+  p && p.removeChild(node);
+
+  return parent;
+};
 
 export const renderDom: (n: VNode<*, *>, n: Node) => Node
-  = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, (parent, node) => {removeNode(node); return parent; }, finalizeNode);
+  = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, removeNodeIfInParent, finalizeNode);

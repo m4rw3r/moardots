@@ -49,8 +49,8 @@ tap.test("dom", t => {
 
     node = renderDom(h("ul", null, h("li", { class: { first: true, second: true } }, "Bye!")), node);
 
-    t.equal(node.outerHTML, '<ul><li class="first second">Bye!</li></ul>');
-    t.equal(document.documentElement.outerHTML, '<html><head></head><body><ul><li class="first second">Bye!</li></ul></body></html>');
+    t.equal(node.outerHTML, '<ul class=""><li class="first second">Bye!</li></ul>');
+    t.equal(document.documentElement.outerHTML, '<html><head></head><body><ul class=""><li class="first second">Bye!</li></ul></body></html>');
 
     t.done();
   });
@@ -64,11 +64,11 @@ tap.test("dom", t => {
     t.equal(document.documentElement.outerHTML, '<html><head></head><body><input type="text" required=""></body></html>');
     t.deepEqual([].slice.call(document.getElementsByTagName("input")).map(i => i.value), ["Foobar!"]);
 
-    node = renderDom(h("input", { type: "text", value: "Lel" }), document.getElementById("app"));
+    node = renderDom(h("input", { type: "text", value: "Lel" }), node);
 
+    // WAT: it does not seem to actually replace
     t.equal(node.outerHTML, '<input type="text">');
     t.equal(document.documentElement.outerHTML, '<html><head></head><body><input type="text"></body></html>');
-    console.log([].slice.call(document.getElementsByTagName("input")).map(i => i.value), ["Lel!"]);
     t.deepEqual([].slice.call(document.getElementsByTagName("input")).map(i => i.value), ["Lel"]);
 
     t.done();
