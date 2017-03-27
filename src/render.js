@@ -97,6 +97,7 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
 
     // TODO: Diff, include children somehow in diff
 
+    // TODO: Are we sure we get the right reference to the children here?
     const res = nodeName(mkAttrs(attributes, children), data[0] === nodeName ? data[2] : undefined);
 
     node = res[0];

@@ -2,7 +2,7 @@
 
 export const COMMENT_NODE       = 8;
 export const COMMENT_PREFIX     = "...";
-export const COMMENT_END_PREFIX = "/" + COMMENT_PREFIX;
+export const COMMENT_END_PREFIX = "/";
 export const EMPTY_ATTRIBUTES   = {};
 export const EMPTY_CHILDREN     = [];
 export const HTML_ESCAPE_MAP    = {

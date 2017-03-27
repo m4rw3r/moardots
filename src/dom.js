@@ -14,12 +14,7 @@ import { mkRender }   from "./render";
 const replaceNode = (node, orig) => {
   const p = orig.parentNode;
 
-  if(node instanceof VirtualNode && p) {
-
-  }
-  else if(p) {
-    p.replaceChild(node, orig);
-  }
+  p.replaceChild(node, orig);
 };
 
 const removeNode = node => {
@@ -63,9 +58,6 @@ const hashToClassName = obj => {
 
   return str;
 };
-
-export const setState = <S>(state: S, retVal?: boolean) =>
-  ({ _state: state, _return: retVal });
 
 export const getState = (node: Element) => {
   let data;
