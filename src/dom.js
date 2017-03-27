@@ -4,13 +4,22 @@ import type { VNode } from "./vdom";
 
 import { META_KEY,
          KEY,
-         ATTRS_KEY }  from "./constants";
+         ATTRS_KEY,
+         COMMENT_NODE,
+         COMMENT_PREFIX,
+         COMMENT_END_PREFIX,
+         ON_KEY }     from "./constants";
 import { mkRender }   from "./render";
 
 const replaceNode = (node, orig) => {
   const p = orig.parentNode;
 
-  p && p.replaceChild(node, orig);
+  if(node instanceof VirtualNode && p) {
+
+  }
+  else if(p) {
+    p.replaceChild(node, orig);
+  }
 };
 
 const removeNode = node => {
@@ -55,6 +64,34 @@ const hashToClassName = obj => {
   return str;
 };
 
+export const setState = <S>(state: S, retVal?: boolean) =>
+  ({ _state: state, _return: retVal });
+
+export const getState = (node: Element) => {
+  let data;
+
+  // TODO: How to obtain the metadata of the actual node?
+  // TODO: Take fragments into account
+
+  // Last element is the actual metadata used to render it
+  return node && (data = (node: any)[META_KEY]) && data.length > 0 && data[data.length - 1];
+};
+
+function eventListener(event) {
+  // TODO: Get state for the element
+  // TODO: How to obtain the actual component?
+  let r = this[ON_KEY][event.type](event);
+
+  // TODO: Use instanceof
+  if(r && r._state) {
+    // TODO: Set the state
+    return r._return;
+  }
+
+  // TODO: How to deal with other return values?
+  return r;
+};
+
 const setAttr = (node, key, value) => {
   if(key === "class") {
     key = "className";
@@ -64,8 +101,26 @@ const setAttr = (node, key, value) => {
     value = hashToClassName(value);
   }
 
+  // TODO: Style
+
   // TODO: Event-listeners
-  if(key in node) {
+  if(key[0] === "o" && key[1] === "n") {
+    let listeners = (node: any)[ON_KEY] || ((node: any)[ON_KEY] = {});
+
+    key = key.substring(2).toLowerCase();
+
+    if(value && !listeners[key]) {
+      // TODO: Bubbling or non-bubbling?
+      node.addEventListener(key, eventListener);
+    }
+    else if(!value && listeners[key]) {
+      // TODO: Bubbling or non-bubbling?
+      node.removeEventListener(key, eventListener);
+    }
+
+    listeners[key] = value;
+  }
+  else if(key in node) {
     try {
       (node: any)[key] = (value == null ? "" : value);
     } catch(e) { }
@@ -95,6 +150,7 @@ const setAttrs = (node, attrs) => {
     // Duplicate the attributes to be able to diff later
     copy[k] = attrs[k];
 
+    // Diff the value, only update if it actually changed
     if(attrs[k] !== (k === "value" || k === "checked" ? (node: any)[k] : prev[k])) {
       setAttr(node, k, attrs[k]);
     }
@@ -105,8 +161,7 @@ const setAttrs = (node, attrs) => {
 
 const mkNode = (type, attrs, meta, orig) => {
   if( ! type) {
-    // Nested node
-    // TODO: Implement
+    // TODO: Code
     throw new Error("Unimplemented");
   }
 
@@ -136,8 +191,14 @@ const getKeyedChildren = (_old, node) => {
   const nodes = node.childNodes;
   let   map   = {};
 
+  // TODO: Support nested arrays
   for(let i = 0, d = nodes.length; i < d; i++) {
     const n = (nodes[i]: any);
+
+    if(n.nodeType === COMMENT_NODE && n.nodeValue.substring(0, 3) === COMMENT_PREFIX) {
+      // TODO: Code
+      throw new Error("Unimplemented");
+    }
 
     if(n[KEY]) {
       map[n[KEY]] = nodes[i];
@@ -152,6 +213,7 @@ const getKeyedChildren = (_old, node) => {
 
 const addChild = (parent, newChild, prev?) => {
   // FIXME: Code
+  // TODO: Support nested arrays
   if( ! prev) {
     // Nothing to swap with later, insert it here now
     parent.appendChild(newChild);
@@ -166,6 +228,9 @@ const finalizeNode = (newNode: any, prevNode: any) => {
   if(newNode !== prevNode && prevNode) {
     replaceNode(newNode, prevNode);
   }
+
+  // TODO: Support nested arrays
+  // TODO: Call onMount callback or so
 
   return newNode;
 };

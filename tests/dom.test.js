@@ -74,5 +74,66 @@ tap.test("dom", t => {
     t.done();
   });
 
+  t.test("should preserve state", t => {
+    startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
+
+    const MyComponent = (_props, state = 0) => [h("p", null, "Num: " + ++state), state];
+
+    let node = renderDom(h(MyComponent), document.getElementById("app"));
+
+    t.equal(node.outerHTML, '<p>Num: 1</p>');
+
+    node = renderDom(h(MyComponent), node);
+
+    t.equal(node.outerHTML, '<p>Num: 2</p>');
+
+    node = renderDom(h(MyComponent), node);
+
+    t.equal(node.outerHTML, '<p>Num: 3</p>');
+
+    t.end();
+  });
+
+  t.test("should preserve nested state", t => {
+    startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
+
+    const MyComponent       = (props, state = 0)  => [h("p", null, props.pre + ":" + ++state), state];
+    const MyNestedComponent = (props, state = 11) => [h(MyComponent, { pre: (state = state + 2) }), state];
+
+    let node = renderDom(h(MyNestedComponent), document.getElementById("app"));
+
+    t.equal(node.outerHTML, '<p>13:1</p>');
+
+    node = renderDom(h(MyNestedComponent), node);
+
+    t.equal(node.outerHTML, '<p>15:2</p>');
+
+    node = renderDom(h(MyNestedComponent), node);
+
+    t.equal(node.outerHTML, '<p>17:3</p>');
+
+    t.end();
+  });
+
+  t.test("should support array as VDom", t => {
+    startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
+
+    const Multi = (props, state = 0) => [[h("label", null, "Test"), h("p", null, "Count: " + ++state)], state];
+
+    let node = renderDom(h(Multi), document.getElementById("app"));
+
+    t.equal(node.outerHTML, '<label>Test</label><p>Count: 1</p>');
+
+    node = renderDom(h(Multi), node);
+
+    t.equal(node.outerHTML, '<label>Test</label><p>Count: 2</p>');
+
+    node = renderDom(h(Multi), node);
+
+    t.equal(node.outerHTML, '<label>Test</label><p>Count: 3</p>');
+
+    t.end();
+  });
+
   t.done();
 });

@@ -23,20 +23,6 @@ export type RemoveChild<N, I> = (parent: I, oldChild: N) => I;
 
 export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
 
-const mkAttrs = (attributes, children) => {
-  let newObj = {};
-
-  for(let k in attributes) {
-    if(attributes.hasOwnProperty(k)) {
-      newObj[k] = attributes[k];
-    }
-  }
-
-  newObj.children = children;
-
-  return newObj;
-}
-
 type ResolvedNode = {
   _type:     string,
   _meta:     Array<Meta<any, any>>,
@@ -62,6 +48,20 @@ type ResolvedString = {
 };
 
 export type ResolvedVNode = ResolvedString | ResolvedArray | ResolvedNode;
+
+const mkAttrs = <P: Object>(attributes: P, children: Array<VNode<*, *>>): P & { children: Array<VNode<*, *>> } => {
+  let newObj = {};
+
+  for(let k in attributes) {
+    if(attributes.hasOwnProperty(k)) {
+      newObj[k] = attributes[k];
+    }
+  }
+
+  newObj.children = children;
+
+  return (newObj: any);
+}
 
 const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, any>>): ResolvedVNode => {
   let newStack = [];
@@ -97,7 +97,7 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
 
     // TODO: Diff, include children somehow in diff
 
-    const res = nodeName((mkAttrs(attributes, children): any), data[0] === nodeName ? data[2] : undefined);
+    const res = nodeName(mkAttrs(attributes, children), data[0] === nodeName ? data[2] : undefined);
 
     node = res[0];
 
@@ -144,7 +144,8 @@ export const mkRender = <P: Object, S, N, I>(
       const vchild = children[i];
       // TODO: This feels a bit long, any way to shorten it?
       const key    = (typeof vchild !== "string" && vchild && vchild.attributes && (vchild: any).attributes[KEY_ATTR] || i: any);
-      (key: string|number);
+      // TODO: Attempt to pick a matching node if its index is numeric, otherwise moving a component
+      // will cause it to lose its data
       const child  = keyed[key];
 
       const newChild = render(vchild, child)
