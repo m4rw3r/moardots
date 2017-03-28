@@ -3,6 +3,7 @@ let jsdom     = require("jsdom");
 let moardots  = require("../src");
 let h         = moardots.h;
 let renderDom = moardots.renderDom;
+let setState  = moardots.setState;
 
 function startDocument(doc) {
   global.document  = jsdom.jsdom(doc);
@@ -115,6 +116,47 @@ tap.test("dom", t => {
     t.end();
   });
 
+  t.test("should update the local state", t => {
+    startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
+
+    const incCounter = (_e, counter)   => { console.log(counter); return setState(counter + 1) };
+    const Counter    = (_p, state = 0, withState) => [h("a", { onClick: withState(incCounter) }, "Count: " + state), state];
+
+    let node = renderDom(h(Counter), document.getElementById("app"));
+
+    t.equal(node.outerHTML, '<a>Count: 0</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.equal(node.outerHTML, '<a>Count: 0</a>');
+
+    node.click();
+
+    t.equal(node.outerHTML, '<a>Count: 0</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.equal(node.outerHTML, '<a>Count: 1</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.equal(node.outerHTML, '<a>Count: 1</a>');
+
+    node.click();
+
+    t.equal(node.outerHTML, '<a>Count: 1</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.equal(node.outerHTML, '<a>Count: 2</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.equal(node.outerHTML, '<a>Count: 2</a>');
+
+    t.end();
+  });
+
   t.test("should support array as VDom", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
@@ -135,5 +177,5 @@ tap.test("dom", t => {
     t.end();
   });
 
-  t.done();
+  t.end();
 });

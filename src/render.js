@@ -1,8 +1,14 @@
 /* @flow */
 
-import type { Component, Meta, VNode } from "./vdom";
+import type { Component, VNode, Meta } from "./vdom";
 
-import { KEY_ATTR, EMPTY_CHILDREN, EMPTY_ATTRIBUTES } from "./constants";
+import {
+  KEY_ATTR,
+  EMPTY_CHILDREN,
+  EMPTY_ATTRIBUTES
+} from "./constants";
+import { mkRef, updateState } from "./util";
+import { State } from "./state";
 
 export type MkNode<N> = (nodeName: string, attributes: Object, children: Array<N|string>, meta: Array<Meta<*, *>>) => N;
 
@@ -25,23 +31,23 @@ export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
 
 type ResolvedNode = {
   _type:     string,
-  _meta:     Array<Meta<any, any>>,
+  _meta:     Array<Meta<*, *>>,
   _text:     null,
   _attrs:    Object,
-  _children: Array<VNode<any, any>>
+  _children: Array<VNode<*, *>>
 };
 
 type ResolvedArray = {
   _type:     null,
-  _meta:     Array<Meta<any, any>>,
+  _meta:     Array<Meta<*, *>>,
   _text:     null,
   _attrs:    Object,
-  _children: Array<VNode<any, any>>
+  _children: Array<VNode<*, *>>
 };
 
 type ResolvedString = {
   _type:     true,
-  _meta:     Array<Meta<any, any>>,
+  _meta:     Array<Meta<*, *>>,
   _text:     string,
   _attrs:    null,
   _children: null
@@ -63,7 +69,7 @@ const mkAttrs = <P: Object>(attributes: P, children: Array<VNode<*, *>>): P & { 
   return (newObj: any);
 }
 
-const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, any>>): ResolvedVNode => {
+const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNode => {
   let newStack = [];
 
   while(typeof node !== "string" && node) {
@@ -98,11 +104,24 @@ const resolveVNode = <P: Object, S>(node: VNode<P, S>, stack: Array<Meta<any, an
     // TODO: Diff, include children somehow in diff
 
     // TODO: Are we sure we get the right reference to the children here?
-    const res = nodeName(mkAttrs(attributes, children), data[0] === nodeName ? data[2] : undefined);
+    // TODO: Clear stack if we do not match here?
+    const state = data[0] === nodeName && data[2] ? data[2] : mkRef(undefined);
 
-    node = res[0];
+    newStack.push([nodeName, attributes, state]);
 
-    newStack.push([nodeName, attributes, res[1]]);
+    // TODO: Can we reuse?
+    // TODO: Can we prevent calls while rendering?
+    const withState = callback => (...args) => {
+      args.push(state.ref);
+
+      const r: State<*, *> = callback.apply(undefined, args);
+
+      return updateState(state, r);
+    };
+
+    const res: VNode<*, *> | State<any, VNode<*, *>> = nodeName(mkAttrs(attributes, children), state.ref, withState);
+
+    node = updateState(state, res);
   }
 
   return {
@@ -144,7 +163,7 @@ export const mkRender = <P: Object, S, N, I>(
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
       // TODO: This feels a bit long, any way to shorten it?
-      const key    = (typeof vchild !== "string" && vchild && vchild.attributes && (vchild: any).attributes[KEY_ATTR] || i: any);
+      const key    = typeof vchild !== "string" && ! Array.isArray(vchild) && vchild && vchild.attributes[KEY_ATTR] || i;
       // TODO: Attempt to pick a matching node if its index is numeric, otherwise moving a component
       // will cause it to lose its data
       const child  = keyed[key];

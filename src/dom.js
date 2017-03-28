@@ -2,13 +2,16 @@
 
 import type { VNode } from "./vdom";
 
-import { META_KEY,
-         KEY,
-         ATTRS_KEY,
-         COMMENT_NODE,
-         COMMENT_PREFIX,
-         COMMENT_END_PREFIX,
-         ON_KEY }     from "./constants";
+import {
+  ATTRS_KEY,
+  COMMENT_END_PREFIX,
+  COMMENT_NODE,
+  COMMENT_PREFIX,
+  KEY,
+  META_KEY,
+  ON_KEY,
+  TEXT_NODE,
+} from "./constants";
 import { mkRender }   from "./render";
 
 const replaceNode = (node, orig) => {
@@ -24,7 +27,7 @@ const removeNode = node => {
 };
 
 const mkTextNode = (text, meta, orig) => {
-  if(orig && orig instanceof Text) {
+  if(orig && orig.nodeType === TEXT_NODE) {
     if(orig.nodeValue != text) {
       orig.nodeValue = text;
     }
@@ -59,29 +62,8 @@ const hashToClassName = obj => {
   return str;
 };
 
-export const getState = (node: Element) => {
-  let data;
-
-  // TODO: How to obtain the metadata of the actual node?
-  // TODO: Take fragments into account
-
-  // Last element is the actual metadata used to render it
-  return node && (data = (node: any)[META_KEY]) && data.length > 0 && data[data.length - 1];
-};
-
 function eventListener(event) {
-  // TODO: Get state for the element
-  // TODO: How to obtain the actual component?
-  let r = this[ON_KEY][event.type](event);
-
-  // TODO: Use instanceof
-  if(r && r._state) {
-    // TODO: Set the state
-    return r._return;
-  }
-
-  // TODO: How to deal with other return values?
-  return r;
+  return this[ON_KEY][event.type](event);
 };
 
 const setAttr = (node, key, value) => {
@@ -89,6 +71,9 @@ const setAttr = (node, key, value) => {
     key = "className";
   }
 
+  // TODO: Any way to prevent Babel from generating the full typeof shim? We don't need to
+  // take Symbol into account here
+  // Maybe move to a separate file and then make rollup exclude that file when using the babel-plugin
   if(key === "className" && typeof value === "object" && value) {
     value = hashToClassName(value);
   }
@@ -235,5 +220,5 @@ const removeNodeIfInParent = (parent, node) => {
   return parent;
 };
 
-export const renderDom: (n: VNode<*, *>, n: Node) => Node
+export const renderDom: (n: VNode<*, *>, n: HTMLElement) => HTMLElement|Text
   = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, removeNodeIfInParent, finalizeNode);

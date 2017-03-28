@@ -1,6 +1,6 @@
 /* @flow */
 
-import type { Meta, VNode } from "./vdom";
+import type { VNode, Meta } from "./vdom";
 
 import { KEY_ATTR, ID } from "./constants";
 import { mkRender }     from "./render";

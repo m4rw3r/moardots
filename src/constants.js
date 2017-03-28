@@ -3,6 +3,7 @@
 export const COMMENT_NODE       = 8;
 export const COMMENT_PREFIX     = "...";
 export const COMMENT_END_PREFIX = "/";
+export const TEXT_NODE          = 3;
 export const EMPTY_ATTRIBUTES   = {};
 export const EMPTY_CHILDREN     = [];
 export const HTML_ESCAPE_MAP    = {
