@@ -2,11 +2,11 @@ require("tap").mochaGlobals();
 
 let should = require("should");
 
-const { renderString, h } = require("../src");
+const { renderString, h, setState } = require("../src");
 
 /* @jsx h */
 
-const RenderCounter = (props, n = 0) => [h("p", null, (props.foo || "") + ++n), n];
+const RenderCounter = (props, n = 0) => setState(++n, h("p", null, (props.foo || "") + n));
 
 describe("string", () => {
   it("empty", () => renderString("").should.equal(""));
@@ -16,7 +16,7 @@ describe("string", () => {
 describe("invalid", () => {
   it("null",      () => renderString(h("p", null, null)).should.equal("<p></p>"));
   it("undefined", () => renderString(h("p", null, undefined)).should.equal("<p></p>"));
-  it("NaN",       () => renderString(h("p", null, NaN)).should.equal("<p></p>"));
+  it("NaN",       () => renderString(h("p", null, NaN)).should.equal("<p>NaN</p>"));
 });
 
 describe("nested", () => {

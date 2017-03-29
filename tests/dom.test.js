@@ -78,7 +78,7 @@ tap.test("dom", t => {
   t.test("should preserve state", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
-    const MyComponent = (_props, state = 0) => [h("p", null, "Num: " + ++state), state];
+    const MyComponent = (_props, state = 0) => setState(++state, h("p", null, "Num: " + state));
 
     let node = renderDom(h(MyComponent), document.getElementById("app"));
 
@@ -98,8 +98,8 @@ tap.test("dom", t => {
   t.test("should preserve nested state", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
-    const MyComponent       = (props, state = 0)  => [h("p", null, props.pre + ":" + ++state), state];
-    const MyNestedComponent = (props, state = 11) => [h(MyComponent, { pre: (state = state + 2) }), state];
+    const MyComponent       = (props, state = 0)  => setState(++state, h("p", null, props.pre + ":" + state));
+    const MyNestedComponent = (props, state = 11) => setState(state = state + 2, h(MyComponent, { pre: state }));
 
     let node = renderDom(h(MyNestedComponent), document.getElementById("app"));
 
@@ -119,8 +119,8 @@ tap.test("dom", t => {
   t.test("should update the local state", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
-    const incCounter = (_e, counter)   => { console.log(counter); return setState(counter + 1) };
-    const Counter    = (_p, state = 0, withState) => [h("a", { onClick: withState(incCounter) }, "Count: " + state), state];
+    const incCounter = (_e, counter)   => setState(counter + 1);
+    const Counter    = (_p, state = 0, withState) => setState(state, h("a", { onClick: withState(incCounter) }, "Count: " + state));
 
     let node = renderDom(h(Counter), document.getElementById("app"));
 

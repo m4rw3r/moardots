@@ -1,51 +1,65 @@
-require("tap").mochaGlobals();
-
-let should = require("should");
+const tap = require("tap");
 
 const { renderStruct, renderString, h } = require("../src");
 
-const myComponent = (props, n = 0) => [h("p", null, props.foo + ++n), n];
+const myComponent = (props, n = 0) => setState(++n, h("p", null, props.foo + ++n));
 
-describe("string", () => {
-  it("empty",  () => h("").should.deepEqual({ nodeName: "", attributes: {}, children: [] }));
-  it("p",      () => h("p").should.deepEqual({ nodeName: "p", attributes: {}, children: [] }));
-  it("simple", () => h("test").should.deepEqual({ nodeName: "test", attributes: {}, children: [] }));
+tap.test("string", t => {
+  t.deepEqual(h(""), { nodeName: "", attributes: {}, children: [] });
+  t.deepEqual(h("p"), { nodeName: "p", attributes: {}, children: [] });
+  t.deepEqual(h("test"), { nodeName: "test", attributes: {}, children: [] });
+
+  t.end();
 });
 
-describe("invalid", () => {
-  it("NaN",       () => h(NaN).should.equal(""));
-  it("null",      () => h(null).should.equal(""));
-  it("undefined", () => h(undefined).should.equal(""));
+tap.test("invalid", t => {
+  t.assert(isNaN(h(NaN)), "NaN");
+  t.equal(h(null), null, "null");
+  t.equal(h(undefined), undefined, "undefined");
 
-  context("children", () => {
-    it("NaN" ,      () => h("p", null, NaN).should.deepEqual({ nodeName: "p", attributes: {}, children: [NaN] }));
-    it("null",      () => h("p", null, null).should.deepEqual({ nodeName: "p", attributes: {}, children: [null] }));
-    it("undefined", () => h("p", null, undefined).should.deepEqual({ nodeName: "p", attributes: {}, children: [undefined] }));
+  t.test("children", t => {
+    let nan = h("p", null, NaN);
+
+    t.assert(typeof nan === "object");
+    t.equal(nan.nodeName, "p");
+    t.deepEqual(nan.attributes, {});
+    t.assert(Array.isArray(nan.children));
+    t.assert(nan.children.length === 1);
+    t.assert(isNaN(nan.children[0]));
+
+    t.deepEqual(h("p", null, null), { nodeName: "p", attributes: {}, children: [null] });
+    t.deepEqual(h("p", null, undefined), { nodeName: "p", attributes: {}, children: [undefined] });
+
+    t.end();
   });
+
+  t.end();
 });
 
-
-
-describe("complex", () => {
-  it("unordered list", () => h("ul", {}, h("li", {}, "Test"), h("li", {}, "Foobar")).should.deepEqual({
+tap.test("complex", t => {
+  t.deepEqual(h("ul", {}, h("li", {}, "Test"), h("li", {}, "Foobar")), {
     nodeName: "ul",
     attributes: {},
     children:  [
       { nodeName: "li", attributes: {}, children: ["Test"] },
       { nodeName: "li", attributes: {}, children: ["Foobar"] },
     ]
-  }));
+  });
+
+  t.end();
 });
 
-describe("component", () => {
-  it("top level", () => h(myComponent, { foo: "LOL" }).should.deepEqual({
+tap.test("component", t => {
+  t.deepEqual(h(myComponent, { foo: "LOL" }), {
     nodeName:   myComponent,
     attributes: { foo: "LOL" },
     children:   []
-  }));
-  it("top level 2", () => h(myComponent).should.deepEqual({
+  });
+  t.deepEqual(h(myComponent), {
     nodeName:   myComponent,
     attributes: {},
     children:   []
-  }));
+  });
+
+  t.end();
 });
