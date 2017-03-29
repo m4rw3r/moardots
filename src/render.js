@@ -1,14 +1,16 @@
 /* @flow */
 
 import type { Component, VNode, Meta } from "./vdom";
+import type { Ref }                    from "./util";
 
 import {
   KEY_ATTR,
   EMPTY_CHILDREN,
   EMPTY_ATTRIBUTES
-} from "./constants";
+}                             from "./constants";
 import { mkRef, updateState } from "./util";
-import { State } from "./state";
+import { State }              from "./state";
+import { h }                  from "./vdom";
 
 export type MkNode<N> = (nodeName: string, attributes: Object, children: Array<N|string>, meta: Array<Meta<*, *>>) => N;
 
@@ -32,6 +34,7 @@ export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
 type ResolvedNode = {
   _type:     string,
   _meta:     Array<Meta<*, *>>,
+  _nodeRef:  Ref<*>,
   _text:     null,
   _attrs:    Object,
   _children: Array<VNode<*, *>>
@@ -40,6 +43,7 @@ type ResolvedNode = {
 type ResolvedArray = {
   _type:     null,
   _meta:     Array<Meta<*, *>>,
+  _nodeRef:  Ref<*>,
   _text:     null,
   _attrs:    Object,
   _children: Array<VNode<*, *>>
@@ -48,6 +52,7 @@ type ResolvedArray = {
 type ResolvedString = {
   _type:     true,
   _meta:     Array<Meta<*, *>>,
+  _nodeRef:  Ref<*>,
   _text:     string,
   _attrs:    null,
   _children: null
@@ -69,14 +74,19 @@ const mkAttrs = <P: Object>(attributes: P, children: Array<VNode<*, *>>): P & { 
   return (newObj: any);
 }
 
-const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNode => {
-  let newStack = [];
+const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Array<Meta<*, *>>, render: (node: VNode<*, *>, orig?: *) => *): ResolvedVNode => {
+  // We create a new reference to the item, even if a previous exists since we
+  // always want to render without a reference to prevent users from setting state
+  // prematurely.
+  // TODO: Return this
+  const nodeRef = mkRef(undefined);
 
   while(typeof node !== "string" && typeof node !== "number" && node) {
     if(Array.isArray(node)) {
       return {
         _type:     null,
         _meta:     newStack,
+        _nodeRef:  nodeRef,
         _text:     null,
         _attrs:    EMPTY_ATTRIBUTES,
         _children: node
@@ -89,6 +99,7 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNod
       return {
         _type:     (nodeName: string),
         _meta:     newStack,
+        _nodeRef:  nodeRef,
         _text:     null,
         _attrs:    attributes,
         _children: children,
@@ -105,31 +116,50 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNod
 
     // TODO: Are we sure we get the right reference to the children here?
     // TODO: Clear stack if we do not match here?
-    const state = data[0] === nodeName && data[2] ? data[2] : mkRef(undefined);
+    const stackLength = newStack.length;
+    const state       = data[0] === nodeName && data[2] ? data[2] : mkRef(undefined);
+    const attrs       = mkAttrs(attributes, children);
 
-    newStack.push([nodeName, attributes, state]);
+    // We include children in attributes so we can diff those too
+    newStack.push([nodeName, attrs, state]);
 
     // TODO: Can we reuse?
-    // TODO: Can we prevent calls while rendering?
     const withState = callback => (...args) => {
-      args.push(state.ref);
+      if( ! nodeRef.ref) {
+        throw new Error("withState: empty nodeRef");
+      }
 
       args.push(state.ref);
 
-      return updateState(state, callback.apply(undefined, args));
-      // TODO: How to trigger render here?
-      // TODO: Use requestAnimationFrame to queue up another render
-      // render(nodeName(mkAttrs(attributes, children), state.ref, withState),
+      const ret = callback.apply(undefined, args)
+
+      // TODO: Maybe use a callback?
+      if(ret instanceof State) {
+        state.ref = ret._state;
+
+        (() => {
+          // TODO: How to trigger render here?
+          // TODO: Account for stack offset, use stackLength and cut off the state and replace
+          // TODO: Use requestAnimationFrame to queue up another render
+          // TODO: We need to inject the current state into it, so we have a partially prepared
+          // newStack up to stackLength
+          render(h(nodeName, attributes, ...children), nodeRef.ref)
+        })()
+
+        return ret._value;
+      }
+
+      return ret;
+
     };
 
-    const res: VNode<*, *> | State<any, VNode<*, *>> = nodeName(mkAttrs(attributes, children), state.ref, withState);
-
-    node = updateState(state, res);
+    node = updateState(state, nodeName(attrs, state.ref, withState));
   }
 
   return {
     _type:     true,
     _meta:     newStack,
+    _nodeRef:  nodeRef,
     _text:     typeof node === "number" ? String(node) : node || "",
     _attrs:    null,
     _children: null,
@@ -148,8 +178,10 @@ export const mkRender = <P: Object, S, N, I>(
   removeChild: RemoveChild<N, I>,
   finalizeNode: FinalizeNode<N, I>
 ): ((node: VNode<P, S>, orig?: N) => N) =>
+  // TODO: Support options for rendering
   function render(node: VNode<P, S>, orig?: N): N {
-    const r = resolveVNode(node, orig ? getStack(orig) : []);
+    // TODO: Pass in the old stack if any is present
+    const r = resolveVNode(node, orig ? getStack(orig) : [], [], render);
 
     if(r._type === true) {
       return mkString(r._text, r._meta, orig);
@@ -187,5 +219,9 @@ export const mkRender = <P: Object, S, N, I>(
     }
 
     // TODO: We probably need to tie the async update here with some callback for all the nodes
-    return finalizeNode(newNode, orig);
+    const finalNode = finalizeNode(newNode, orig);
+
+    r._nodeRef.ref = finalNode;
+
+    return finalNode;
   };

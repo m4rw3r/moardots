@@ -1,7 +1,9 @@
 /* @flow */
 
-import { COMMENT_PREFIX,
-         COMMENT_END_PREFIX } from "./constants";
+import {
+  COMMENT_PREFIX,
+  COMMENT_END_PREFIX
+} from "./constants";
 
 let virtualCounter = 0;
 

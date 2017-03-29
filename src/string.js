@@ -2,9 +2,11 @@
 
 import type { VNode } from "./vdom";
 
-import { HTML_ESCAPE_MAP,
-         ID }              from "./constants";
-import { mkRender }        from "./render";
+import {
+  HTML_ESCAPE_MAP,
+  ID
+}                   from "./constants";
+import { mkRender } from "./render";
 
 const escapeChar = tag =>
  HTML_ESCAPE_MAP[tag] || tag;

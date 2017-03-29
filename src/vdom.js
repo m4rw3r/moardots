@@ -1,9 +1,12 @@
 /* @flow */
 
 import type { Ref } from "./util";
-import { State } from "./state";
 
-import { EMPTY_ATTRIBUTES, EMPTY_CHILDREN } from "./constants";
+import {
+  EMPTY_ATTRIBUTES,
+  EMPTY_CHILDREN
+}                from "./constants";
+import { State } from "./state";
 
 type VNodePrimitives = null | string | number;
 

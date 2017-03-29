@@ -132,7 +132,7 @@ tap.test("dom", t => {
 
     node.click();
 
-    t.equal(node.outerHTML, '<a>Count: 0</a>');
+    t.equal(node.outerHTML, '<a>Count: 1</a>');
 
     node = renderDom(h(Counter), node);
 
@@ -144,7 +144,7 @@ tap.test("dom", t => {
 
     node.click();
 
-    t.equal(node.outerHTML, '<a>Count: 1</a>');
+    t.equal(node.outerHTML, '<a>Count: 2</a>');
 
     node = renderDom(h(Counter), node);
 

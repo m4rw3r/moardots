@@ -1,3 +1,6 @@
+/*
+ * This file does not have any flow annotations, instead those can be found in `/decl/state.js`.
+ */
 
 /**
  * State-monad-like object enabling updating state and returning a value at the same time.

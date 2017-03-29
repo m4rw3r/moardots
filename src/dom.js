@@ -11,8 +11,8 @@ import {
   META_KEY,
   ON_KEY,
   TEXT_NODE,
-} from "./constants";
-import { mkRender }   from "./render";
+}                   from "./constants";
+import { mkRender } from "./render";
 
 const replaceNode = (node, orig) => {
   const p = orig.parentNode;
@@ -38,13 +38,16 @@ const mkTextNode = (text, meta, orig) => {
     orig = document.createTextNode(text);
   }
 
-  (orig: any)[META_KEY] = meta;
+  setStack(orig, meta);
 
   return orig;
 };
 
 const getStack = node =>
   (node: any)[META_KEY] || [];
+
+const setStack = (node, meta) =>
+  (node: any)[META_KEY] = meta;
 
 const hashToClassName = obj => {
   let str = "";
@@ -156,8 +159,7 @@ const mkNode = (type, attrs, meta, orig) => {
   }
 
   setAttrs(node, attrs);
-
-  (node: any)[META_KEY] = meta;
+  setStack(node, meta);
 
   return node;
 };
