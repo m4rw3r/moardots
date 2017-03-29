@@ -5,11 +5,15 @@ import { State } from "./state";
 
 import { EMPTY_ATTRIBUTES, EMPTY_CHILDREN } from "./constants";
 
-export type VNode<P: Object, S> = string | Array<VNode<*, *>> | {|
+type VNodePrimitives = null | string | number;
+
+type VNodeObject<P: Object, S> = {|
   nodeName:   string|Component<P, S>,
   attributes: P,
   children:   Array<VNode<*, *>>
 |};
+
+export type VNode<P: Object, S> = VNodePrimitives | Array<VNode<*, *>> | VNodeObject<P, S>;
 
 // TODO: Improve
 export type WithState<S> = (f: Function) => * => *;
@@ -23,10 +27,9 @@ export type Component<P: Object, S> = (p: P, s?: S, withState: WithState<S>) => 
 export type Meta<P: Object, S> = [Component<P, S>, P, Ref<S>];
 
 // TODO: Handle numbers and nested arrays in children
-export function h<P: Object, S>(nodeName: string|Component<P, S>, attributes: P, ...children: Array<VNode<*, *>>): VNode<P, S> {
-  // TODO: Warn in dev-mode?
+export function h<P: Object, S>(nodeName: null|string|number|Component<P, S>, attributes: P, ...children: Array<VNode<*, *>>): VNode<P, S> {
   if(typeof nodeName !== "string" && typeof nodeName !== "function") {
-    return nodeName ? "" + nodeName : "";
+    return nodeName;
   }
 
   // TODO: Flatten children-arrays (this is a performance-optimization, avoiding unnecesary fragment-creation)

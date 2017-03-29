@@ -208,6 +208,7 @@ const finalizeNode = (newNode: any, prevNode: any) => {
 
   // TODO: Support nested arrays
   // TODO: Call onMount callback or so
+  // TODO: Tie the node to the components, so that any setState updates
 
   return newNode;
 };

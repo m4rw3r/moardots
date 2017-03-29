@@ -72,7 +72,7 @@ const mkAttrs = <P: Object>(attributes: P, children: Array<VNode<*, *>>): P & { 
 const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNode => {
   let newStack = [];
 
-  while(typeof node !== "string" && node) {
+  while(typeof node !== "string" && typeof node !== "number" && node) {
     if(Array.isArray(node)) {
       return {
         _type:     null,
@@ -114,9 +114,12 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNod
     const withState = callback => (...args) => {
       args.push(state.ref);
 
-      const r: State<*, *> = callback.apply(undefined, args);
+      args.push(state.ref);
 
-      return updateState(state, r);
+      return updateState(state, callback.apply(undefined, args));
+      // TODO: How to trigger render here?
+      // TODO: Use requestAnimationFrame to queue up another render
+      // render(nodeName(mkAttrs(attributes, children), state.ref, withState),
     };
 
     const res: VNode<*, *> | State<any, VNode<*, *>> = nodeName(mkAttrs(attributes, children), state.ref, withState);
@@ -127,7 +130,7 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>): ResolvedVNod
   return {
     _type:     true,
     _meta:     newStack,
-    _text:     node || "",
+    _text:     typeof node === "number" ? String(node) : node || "",
     _attrs:    null,
     _children: null,
   };
@@ -149,7 +152,6 @@ export const mkRender = <P: Object, S, N, I>(
     const r = resolveVNode(node, orig ? getStack(orig) : []);
 
     if(r._type === true) {
-      // Why does Flow fail to detect _text here?
       return mkString(r._text, r._meta, orig);
     }
 
@@ -163,7 +165,7 @@ export const mkRender = <P: Object, S, N, I>(
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
       // TODO: This feels a bit long, any way to shorten it?
-      const key    = typeof vchild !== "string" && ! Array.isArray(vchild) && vchild && vchild.attributes[KEY_ATTR] || i;
+      const key    = typeof vchild !== "string" && typeof vchild !== "number" && ! Array.isArray(vchild) && vchild && vchild.attributes[KEY_ATTR] || i;
       // TODO: Attempt to pick a matching node if its index is numeric, otherwise moving a component
       // will cause it to lose its data
       const child  = keyed[key];
@@ -184,5 +186,6 @@ export const mkRender = <P: Object, S, N, I>(
       newNode = removeChild(newNode, keyed[k]);
     }
 
+    // TODO: We probably need to tie the async update here with some callback for all the nodes
     return finalizeNode(newNode, orig);
   };
