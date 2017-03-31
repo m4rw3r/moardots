@@ -11,6 +11,7 @@ import {
 import { mkRef, updateState } from "./util";
 import { State }              from "./state";
 import { h }                  from "./vdom";
+import { enqueueRender }      from "./queue";
 
 export type MkNode<N> = (nodeName: string, attributes: Object, children: Array<N|string>, meta: Array<Meta<*, *>>) => N;
 
@@ -30,6 +31,10 @@ export type AddChild<N, I> = (parent: I, newChild: N, prev?: N) => I;
 export type RemoveChild<N, I> = (parent: I, oldChild: N) => I;
 
 export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
+
+export type RenderOptions = {
+  enqueueRender?: (() => void) => void
+};
 
 type ResolvedNode = {
   _type:     string,
@@ -137,14 +142,11 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
       if(ret instanceof State) {
         state.ref = ret._state;
 
-        (() => {
-          // TODO: How to trigger render here?
-          // TODO: Account for stack offset, use stackLength and cut off the state and replace
-          // TODO: Use requestAnimationFrame to queue up another render
-          // TODO: We need to inject the current state into it, so we have a partially prepared
-          // newStack up to stackLength
-          render(h(nodeName, attributes, ...children), nodeRef.ref)
-        })()
+        // TODO: Account for stack offset, use stackLength and cut off the state and replace
+        // TODO: We need to inject the current state into it, so we have a partially prepared
+        // newStack up to stackLength
+        // TODO: nodeRef might point to a comment-node maybe?
+        render(h(nodeName, attributes, ...children), nodeRef.ref);
 
         return ret._value;
       }
@@ -179,9 +181,10 @@ export const mkRender = <P: Object, S, N, I>(
   finalizeNode: FinalizeNode<N, I>
 ): ((node: VNode<P, S>, orig?: N) => N) =>
   // TODO: Support options for rendering
-  function render(node: VNode<P, S>, orig?: N): N {
+  function render(node: VNode<P, S>, orig?: N, options?: RenderOptions): N {
+    const queue = (vdom, orig) => (options && options.enqueueRender || enqueueRender)(() => render(vdom, orig));
     // TODO: Pass in the old stack if any is present
-    const r = resolveVNode(node, orig ? getStack(orig) : [], [], render);
+    const r     = resolveVNode(node, orig ? getStack(orig) : [], [], queue);
 
     if(r._type === true) {
       return mkString(r._text, r._meta, orig);
@@ -202,7 +205,7 @@ export const mkRender = <P: Object, S, N, I>(
       // will cause it to lose its data
       const child  = keyed[key];
 
-      const newChild = render(vchild, child)
+      const newChild = render(vchild, child, options)
 
       // TODO: Support nested arrays
 
