@@ -221,6 +221,7 @@ export const mkRender = <P: Object, S, N, I>(
     // TODO: We probably need to tie the async update here with some callback for all the nodes
     const finalNode = finalizeNode(newNode, orig);
 
+    // TODO: We need to trigger ref-attributes here as well as did mount
     r._nodeRef.ref = finalNode;
 
     return finalNode;
