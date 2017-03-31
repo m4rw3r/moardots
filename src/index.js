@@ -5,9 +5,8 @@ export type { StructNode }             from "./struct";
 export type { Ref }                    from "./util";
 export type { RenderOptions }          from "./render";
 
-export { h }             from "./vdom";
-export { setState }      from "./state";
-export { renderDom }     from "./dom";
-export { renderString }  from "./string";
-export { renderStruct }  from "./struct";
-export { enqueueRender } from "./queue";
+export { h }            from "./vdom";
+export { setState }     from "./state";
+export { renderDom }    from "./dom";
+export { renderString } from "./string";
+export { renderStruct } from "./struct";
