@@ -130,11 +130,16 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
     newStack.push([nodeName, attrs, state]);
 
     // TODO: Can we reuse?
-    const withState = callback => (...args) => {
+    /**
+     * Lifts a given function to state and props, making it possible to act on state as well as use `setState`
+     * to replace the component state.
+     */
+    const lift = callback => (...args) => {
       if( ! nodeRef.ref) {
-        throw new Error("withState: empty nodeRef");
+        throw new Error("lift: empty nodeRef");
       }
 
+      args.push(attrs);
       args.push(state.ref);
 
       const ret = callback.apply(undefined, args)
@@ -154,10 +159,9 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
       }
 
       return ret;
-
     };
 
-    node = updateState(state, nodeName(attrs, state.ref, withState));
+    node = updateState(state, nodeName(attrs, state.ref, lift));
   }
 
   return {

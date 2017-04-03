@@ -119,8 +119,8 @@ tap.test("dom", t => {
   t.test("should update the local state", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
-    const incCounter = (_e, counter)   => setState(counter + 1);
-    const Counter    = (_p, state = 0, withState) => setState(state, h("a", { onClick: withState(incCounter) }, "Count: " + state));
+    const incCounter = (_e, props, state)     => setState((state || 0) + 1);
+    const Counter    = (_p, state, withState) => h("a", { onClick: withState(incCounter) }, "Count: " + (state || 0));
 
     let node = renderDom(h(Counter), document.getElementById("app"));
 
