@@ -139,8 +139,8 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
         throw new Error("lift: empty nodeRef");
       }
 
-      args.push(attrs);
-      args.push(state.ref);
+      args.unshift(state.ref);
+      args.unshift(attrs);
 
       const ret = callback.apply(undefined, args)
 
