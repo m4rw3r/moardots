@@ -32,6 +32,8 @@ export type RemoveChild<N, I> = (parent: I, oldChild: N) => I;
 
 export type FinalizeNode<N, I> = (transient: I, orig?: N) => N;
 
+export type CallNodeRefs<N> = (attrs: Object, node: N, old?: N) => void;
+
 export type RenderOptions = {
   enqueueRender?: (() => void) => void
 };
@@ -83,7 +85,6 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
   // We create a new reference to the item, even if a previous exists since we
   // always want to render without a reference to prevent users from setting state
   // prematurely.
-  // TODO: Return this
   const nodeRef = mkRef(undefined);
 
   while(typeof node !== "string" && typeof node !== "number" && node) {
@@ -142,6 +143,7 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
       if(ret instanceof State) {
         state.ref = ret._state;
 
+        // TODO: Generate a unique identifier attached to the CB, such that we do not render the same element twice?
         // TODO: Account for stack offset, use stackLength and cut off the state and replace
         // TODO: We need to inject the current state into it, so we have a partially prepared
         // newStack up to stackLength
@@ -178,7 +180,8 @@ export const mkRender = <P: Object, S, N, I>(
   getChildMap: GetChildMap<N, I>,
   addChild:    AddChild<N, I>,
   removeChild: RemoveChild<N, I>,
-  finalizeNode: FinalizeNode<N, I>
+  finalizeNode: FinalizeNode<N, I>,
+  callNodeRefs: CallNodeRefs<N>
 ): ((node: VNode<P, S>, orig?: N) => N) =>
   // TODO: Support options for rendering
   function render(node: VNode<P, S>, orig?: N, options?: RenderOptions): N {
@@ -200,14 +203,12 @@ export const mkRender = <P: Object, S, N, I>(
     for(let i = 0; i < children.length; i++) {
       const vchild = children[i];
       // TODO: This feels a bit long, any way to shorten it?
-      const key    = typeof vchild !== "string" && typeof vchild !== "number" && ! Array.isArray(vchild) && vchild && vchild.attributes[KEY_ATTR] || i;
+      const key      = typeof vchild !== "string" && typeof vchild !== "number" && ! Array.isArray(vchild) && vchild && vchild.attributes[KEY_ATTR] || i;
       // TODO: Attempt to pick a matching node if its index is numeric, otherwise moving a component
       // will cause it to lose its data
-      const child  = keyed[key];
+      const child    = keyed[key];
 
       const newChild = render(vchild, child, options)
-
-      // TODO: Support nested arrays
 
       // TODO: Go through how this works properly
       newNode = addChild(newNode, newChild, child);
@@ -221,11 +222,11 @@ export const mkRender = <P: Object, S, N, I>(
       newNode = removeChild(newNode, keyed[k]);
     }
 
-    // TODO: We probably need to tie the async update here with some callback for all the nodes
     const finalNode = finalizeNode(newNode, orig);
 
-    // TODO: We need to trigger ref-attributes here as well as did mount
     r._nodeRef.ref = finalNode;
+
+    callNodeRefs(r._attrs, finalNode, orig);
 
     return finalNode;
   };

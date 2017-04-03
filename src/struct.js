@@ -4,6 +4,7 @@ import type { VNode, Meta } from "./vdom";
 
 import { KEY_ATTR, ID } from "./constants";
 import { mkRender }     from "./render";
+import { callRefs } from "./util";
 
 export type StructNode = {
   nodeName:   string|null,
@@ -38,4 +39,4 @@ const addChild = (parent: StructNode, newChild: StructNode|string, prev?: Struct
 };
 
 export const renderStruct: (n: VNode<*, *>, n: StructNode|string) => StructNode|string
-  = mkRender(ID, getStructStack, mkStruct, getKeyedChildren, addChild, ID, ID);
+  = mkRender(ID, getStructStack, mkStruct, getKeyedChildren, addChild, ID, ID, callRefs);

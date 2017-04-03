@@ -13,6 +13,7 @@ import {
   TEXT_NODE,
 }                   from "./constants";
 import { mkRender } from "./render";
+import { callRefs } from "./util";
 
 const replaceNode = (node, orig) => {
   const p = orig.parentNode;
@@ -238,4 +239,4 @@ const removeNodeIfInParent = (parent, node) => {
 };
 
 export const renderDom: (n: VNode<*, *>, n: HTMLElement) => HTMLElement|Text
-  = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, removeNodeIfInParent, finalizeNode);
+  = mkRender(mkTextNode, getStack, mkNode, getKeyedChildren, addChild, removeNodeIfInParent, finalizeNode, callRefs);

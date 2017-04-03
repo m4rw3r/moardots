@@ -97,4 +97,4 @@ const finalizeNode = node => {
  * Renders a VNode to a string.
  */
 export const renderString: (n: VNode<*, *>, n: string) => string
-  = mkRender(escapeStr, () => [], mkNode, () => ({}), addChild, ID, finalizeNode);
+  = mkRender(escapeStr, () => [], mkNode, () => ({}), addChild, ID, finalizeNode, () => {});

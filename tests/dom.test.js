@@ -132,10 +132,15 @@ tap.test("dom", t => {
 
     node.click();
 
-    t.equal(node.outerHTML, '<a>Count: 1</a>');
+    t.deepEqual(node["...meta"], [[Counter, { children: [] }, { ref: 1 }]]);
 
+    // Rendering is delayed
+    t.equal(node.outerHTML, '<a>Count: 0</a>');
+
+    // Re-render with the new state explicitly
     node = renderDom(h(Counter), node);
 
+    t.deepEqual(node["...meta"], [[Counter, { children: [] }, { ref: 1 }]]);
     t.equal(node.outerHTML, '<a>Count: 1</a>');
 
     node = renderDom(h(Counter), node);
@@ -144,14 +149,17 @@ tap.test("dom", t => {
 
     node.click();
 
+    t.deepEqual(node["...meta"], [[Counter, { children: [] }, { ref: 2 }]]);
+    t.equal(node.outerHTML, '<a>Count: 1</a>');
+
+    node = renderDom(h(Counter), node);
+
+    t.deepEqual(node["...meta"], [[Counter, { children: [] }, { ref: 2 }]]);
     t.equal(node.outerHTML, '<a>Count: 2</a>');
 
     node = renderDom(h(Counter), node);
 
-    t.equal(node.outerHTML, '<a>Count: 2</a>');
-
-    node = renderDom(h(Counter), node);
-
+    t.deepEqual(node["...meta"], [[Counter, { children: [] }, { ref: 2 }]]);
     t.equal(node.outerHTML, '<a>Count: 2</a>');
 
     t.end();
