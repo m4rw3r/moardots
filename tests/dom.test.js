@@ -168,19 +168,19 @@ tap.test("dom", t => {
   t.test("should support array as VDom", t => {
     startDocument('<!DOCTYPE html><html><head></head><body><div id="app"></div></body></html>');
 
-    const Multi = (props, state = 0) => [[h("label", null, "Test"), h("p", null, "Count: " + ++state)], state];
+    const Multi = (props, state = 0) => setState(++state, [h("label", null, "Test"), h("p", null, "Count: " + state)]);
 
     let node = renderDom(h(Multi), document.getElementById("app"));
 
-    t.equal(node.outerHTML, '<label>Test</label><p>Count: 1</p>');
+    t.equal(document.documentElement.outerHTML, '<html><head></head><body><!--...1--><label>Test</label><p>Count: 1</p><!--/...1--></body></html>');
 
     node = renderDom(h(Multi), node);
 
-    t.equal(node.outerHTML, '<label>Test</label><p>Count: 2</p>');
+    t.equal(document.documentElement.outerHTML, '<html><head></head><body><!--...1--><label>Test</label><p>Count: 2</p><!--/...1--></body></html>');
 
     node = renderDom(h(Multi), node);
 
-    t.equal(node.outerHTML, '<label>Test</label><p>Count: 3</p>');
+    t.equal(document.documentElement.outerHTML, '<html><head></head><body><!--...1--><label>Test</label><p>Count: 3</p><!--/...1--></body></html>');
 
     t.end();
   });

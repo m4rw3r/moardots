@@ -1,11 +1,12 @@
-const { rollup } = require("rollup");
-const babel      = require("rollup-plugin-babel");
-const uglify     = require("rollup-plugin-uglify");
-const replace    = require("rollup-plugin-replace");
-const strip      = require("rollup-plugin-strip");
-const gzip       = require("rollup-plugin-gzip");
+const { rollup }   = require("rollup");
+const babel        = require("rollup-plugin-babel");
+const uglify       = require("rollup-plugin-uglify");
+const replace      = require("rollup-plugin-replace");
+const strip        = require("rollup-plugin-strip");
+const gzip         = require("rollup-plugin-gzip");
+const localResolve = require("rollup-plugin-local-resolve");
 // We use a different version of uglifyjs2 which supports most of es2015 syntax
-const minify     = require("uglifyjs").minify;
+const minify       = require("uglifyjs").minify;
 
 const targets = {
   "":       { format: "cjs", sourceMap: true },
@@ -16,6 +17,7 @@ const targets = {
 const shared = {
   entry: "src/index.js",
   plugins: [
+    localResolve(),
     babel({
       babelrc: false,
       presets: ["es2015-rollup"],
@@ -64,6 +66,9 @@ const prod = Object.assign({}, shared, {
       },
       mangleProperties: {
         regex: /^_/
+      },
+      output: {
+        beautify: false
       }
     }, minify),
     gzip({
