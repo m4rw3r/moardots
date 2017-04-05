@@ -152,8 +152,9 @@ const resolveVNode = (node: VNode<*, *>, stack: Array<Meta<*, *>>, newStack: Arr
         // TODO: Account for stack offset, use stackLength and cut off the state and replace
         // TODO: We need to inject the current state into it, so we have a partially prepared
         // newStack up to stackLength
-        // TODO: nodeRef might point to a comment-node maybe?
-        render(h(nodeName, attributes, ...children), nodeRef.ref);
+        // Manually writing out the apply skips a babel shim, we skip this since children is always
+        // an array.
+        render((h: Function).apply(undefined, [nodeName, attributes].concat(children)), nodeRef.ref);
 
         return ret._value;
       }
